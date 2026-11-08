@@ -37,7 +37,39 @@ test('only completed rewards have motion overlays and existing tiles stay still'
   assert.match(app,/rewardDecorations\[index\]/);
   assert.match(app,/store\.settings\.effects==='off'\) return ''/);
   assert.match(app,/newest&&idx===last&&store\.settings\.effects!=='off'/);
+  assert.match(app,/data-action=\"expand-reward\"/);
+  assert.match(app,/reward-modal/);
+  assert.match(app,/\$\{rewardLightbox\(\)\}/);
+  assert.match(app,/case 'expand-reward'/);
+  assert.match(app,/case 'close-reward-modal'/);
   assert.match(css,/@media\(prefers-reduced-motion:reduce\)\{\.reward-art-frame \.reward-effect\{display:none!important\}\}/);
   assert.match(css,/\.reward-art-frame\.low-motion \.reward-effect:not\(:nth-of-type\(1\)\)/);
+  assert.doesNotMatch(css,/petal|butterfly|leaf/);
   assert.doesNotMatch(css,/\.reward-complete-art\.low-motion img\{animation:gentle-art/);
+});
+
+test('production storage remains v4, isolated preview features are absent',()=>{
+  const app=readFileSync(new URL('../docs/app.js',import.meta.url),'utf8');
+  assert.match(app,/const STORAGE_KEY = 'kuku-master-check:v4'/);
+  assert.match(app,/const OLD_STORAGE_KEYS = \['kuku-master-check:v1','kuku-master-check:v2','kuku-master-check:v3'\]/);
+  assert.doesNotMatch(app,/kuku-master-check-preview|PREVIEW_REWARD_FOCUS_KEY|review-fixtures/);
+  assert.match(app,/const panelIndex=idx<0\?/);
+  assert.match(app,/store\.reward\.pictures\[idx\]\.unlocked===0/);
+});
+
+test('reward panel stays on the just-completed picture until the next tile is earned',()=>{
+  const app=readFileSync(new URL('../docs/app.js',import.meta.url),'utf8');
+  const selection=app.match(/const panelIndex=([\s\S]*?);\n  shell\(/)?.[1];
+  assert.ok(selection,'Missing the production reward-panel selection');
+  const choose=new Function('idx','store',`return (${selection});`);
+  const panel=unlocked=>{
+    const store={reward:{pictures:unlocked.map(n=>({unlocked:n}))}};
+    const idx=store.reward.pictures.findIndex(p=>p.unlocked<4);
+    return choose(idx,store);
+  };
+  assert.equal(panel([0,0,0,0]),0,'First picture starts unopened');
+  assert.equal(panel([4,0,0,0]),0,'Last completed picture remains in main panel');
+  assert.equal(panel([4,1,0,0]),1,'New picture becomes primary when opened');
+  assert.equal(panel([4,4,0,0]),1,'Second picture remains after completion');
+  assert.equal(panel([4,4,4,4]),3,'Final completed picture remains on completion');
 });
