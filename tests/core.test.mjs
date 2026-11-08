@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BANK, buildQuestions, masteryOf, stageStats, newStore, validateStore, csvOf, localDate } from '../docs/core.js';
 const record = (a,b,input,day='2026-11-08',mode='challenge') => ({
-  sessionId:'sample', mode,kind:'mixed',a,b,input,correct:input===a*b,elapsedMs:2500,
+  sessionId:'sample', mode,kind:mode==='challenge'?'full':'mixed',a,b,input,correct:input===a*b,elapsedMs:2500,
   answeredAt:`${day}T12:00:00.000Z`,localDate:day
 });
 test('81 unique ordered expressions', () => {
@@ -61,58 +61,79 @@ test('six score bands: 100, 80-99, 60-79, 40-59, 20-39, 0-19',()=>{
  assert.equal(scoreBand(65,81),'great');
  assert.throws(()=>scoreBand(11,10));
 });
-test('four rewards fixed in a secret order, tiles randomized per picture',()=>{
+test('four rewards fixed in a secret order with four unique tiles each',()=>{
  const s=newStore();
  assert.deepEqual(s.reward.pictures.map(p=>p.id),REWARD_PICTURES.map(p=>p.id));
  assert.equal(s.reward.pictures.length,4);
- for(const p of s.reward.pictures)assert.deepEqual([...p.order].sort(),[0,1,2,3,4,5,6,7,8]);
+ for(const p of s.reward.pictures)assert.deepEqual([...p.order].sort(),[0,1,2,3]);
  assert.equal(currentRewardIndex(s.reward),0);
 });
-test('perfect challenge in each kind unlocks one and exactly one tile',()=>{
+test('only full-score 81-question challenge unlocks a tile',()=>{
  const s=newStore();
- assert.equal(awardPerfect(s,{id:'practice',mode:'practice',correct:9,total:9}),null);
- assert.equal(awardPerfect(s,{id:'incorrect',mode:'challenge',correct:8,total:9}),null);
- for(const [i,kind,total] of [[0,'stage',9],[1,'mixed',10],[2,'mixed',20],[3,'full',81],[4,'weak',10]]){
-  const won=awardPerfect(s,{id:`ok-${kind}-${i}`,mode:'challenge',correct:total,total});
-  assert.equal(won.pictureIndex,0);
-  assert.equal(won.unlocked,i+1);
- }
- assert.equal(totalRewardTiles(s.reward),5);
- assert.equal(awardPerfect(s,{id:'ok-stage-0',mode:'challenge',correct:9,total:9}),null);
- assert.equal(totalRewardTiles(s.reward),5);
+ for(const bad of [
+  {id:'practice',mode:'practice',kind:'full',correct:81,total:81},
+  {id:'stage',mode:'challenge',kind:'stage',correct:9,total:9},
+  {id:'mixed',mode:'challenge',kind:'mixed',correct:10,total:10},
+  {id:'weak',mode:'challenge',kind:'weak',correct:20,total:20},
+  {id:'partial',mode:'challenge',kind:'full',correct:80,total:81},
+  {id:'forged',mode:'challenge',kind:'full',correct:9,total:9}
+ ])assert.equal(awardPerfect(s,bad),null);
+ assert.equal(totalRewardTiles(s.reward),0);
+ const won=awardPerfect(s,{id:'ok',mode:'challenge',kind:'full',correct:81,total:81});
+ assert.equal(won.pictureIndex,0);
+ assert.equal(won.unlocked,1);
+ assert.equal(awardPerfect(s,{id:'ok',mode:'challenge',kind:'full',correct:81,total:81}),null);
+ assert.equal(totalRewardTiles(s.reward),1);
 });
-test('36 full-score challenges complete four rewards and never double-count',()=>{
+test('16 unique 81/81 challenges complete four rewards and never double-count',()=>{
  const s=newStore(()=>0.37),seen=[];
- for(let i=0;i<36;i++){
-  const result=awardPerfect(s,{id:`reward-${i}`,mode:'challenge',correct:9,total:9});
-  assert.equal(result.pictureIndex,Math.floor(i/9));
+ for(let i=0;i<16;i++){
+  const result=awardPerfect(s,{id:`reward-${i}`,mode:'challenge',kind:'full',correct:81,total:81});
+  assert.equal(result.pictureIndex,Math.floor(i/4));
   seen.push(`${result.pictureIndex}:${result.tileIndex}`);
-  assert.equal(result.pictureComplete,i%9===8);
-  assert.equal(result.collectionComplete,i===35);
+  assert.equal(result.pictureComplete,i%4===3);
+  assert.equal(result.collectionComplete,i===15);
  }
- assert.equal(new Set(seen).size,36);
+ assert.equal(new Set(seen).size,16);
  assert.equal(currentRewardIndex(s.reward),-1);
- assert.equal(totalRewardTiles(s.reward),36);
- assert.equal(awardPerfect(s,{id:'after',mode:'challenge',correct:81,total:81}),null);
- assert.equal(s.reward.earnedSessionIds.length,37);
- assert.equal(totalRewardTiles(s.reward),36);
+ assert.equal(totalRewardTiles(s.reward),16);
+ assert.equal(awardPerfect(s,{id:'after',mode:'challenge',kind:'full',correct:81,total:81}),null);
+ assert.equal(totalRewardTiles(s.reward),16);
 });
-test('migration of both v1 and v2 backups keeps records and previous reward tiles',()=>{
- const v1={schemaVersion:1,records:[record(7,8,56)],sessions:[],active:null};
- const migrated=validateStore(v1);
- assert.equal(migrated.schemaVersion,3);
- assert.equal(migrated.records.length,1);
- assert.equal(totalRewardTiles(migrated.reward),0);
- const v2={...v1,schemaVersion:2,settings:{effects:'low'},reward:{pictureId:'storybook-picnic-1',unlocked:3,earnedSessionIds:['old-1','old-2','old-3']}};
- const upgraded=validateStore(v2);
- assert.equal(upgraded.schemaVersion,3);
- assert.equal(upgraded.reward.pictures[0].unlocked,3);
- assert.equal(upgraded.settings.effects,'low');
- assert.equal(upgraded.reward.earnedSessionIds.length,3);
- const again=validateStore(upgraded);
- assert.equal(again.reward.pictures[0].unlocked,3);
- const bad=structuredClone(again);bad.reward.pictures[0].order=[0,0,1,2,3,4,5,6,7];
- assert.throws(()=>validateStore(bad));
- const inconsistent=structuredClone(again);inconsistent.reward.pictures[1].unlocked=1;
- assert.throws(()=>validateStore(inconsistent));
+test('v4 backup validates and round-trips while legacy versions are rejected',()=>{
+ const v4=newStore(()=>0.37);v4.records.push(record(7,8,56));
+ v4.sessions.push({id:'sample',mode:'challenge',kind:'full',total:81,correct:81,completedAt:'2026-11-08T12:00:00.000Z'});
+ awardPerfect(v4,v4.sessions[0]);
+ const again=validateStore(JSON.parse(JSON.stringify(v4)));
+ assert.equal(again.schemaVersion,4);
+ assert.equal(again.records.length,1);
+ assert.equal(again.reward.pictures[0].unlocked,1);
+ assert.equal(again.reward.earnedSessionIds.length,1);
+ assert.equal(again.settings.effects,'normal');
+ for(const v of [1,2,3]) {
+  const legacy=structuredClone(v4);legacy.schemaVersion=v;
+  assert.throws(()=>validateStore(legacy),/旧形式/);
+ }
+ const bad=structuredClone(v4);bad.reward.pictures[0].order=[0,0,1,2];
+ assert.throws(()=>validateStore(bad),/ご褒美/);
+ const inconsistent=structuredClone(v4);inconsistent.reward.pictures[1].unlocked=1;
+ assert.throws(()=>validateStore(inconsistent),/ご褒美/);
+ const fake=structuredClone(v4);fake.sessions[0].total=9;
+ assert.throws(()=>validateStore(fake),/テスト履歴/);
+ const wrong=structuredClone(v4);wrong.records[0].kind='mixed';
+ assert.throws(()=>validateStore(wrong),/回答履歴/);
+});
+test('in-progress 81-question challenge is valid and malformed challenge is rejected',()=>{
+ const s=newStore();const questions=buildQuestions({kind:'full',random:()=>.5});
+ s.active={id:'now',mode:'challenge',kind:'full',questions,index:9,elapsedMs:45};
+ assert.equal(validateStore(s).active.questions.length,81);
+ const bad=structuredClone(s);bad.active.questions.pop();
+ assert.throws(()=>validateStore(bad),/途中のテスト/);
+ const invalidMode=structuredClone(s);invalidMode.active.kind='weak';
+ assert.throws(()=>validateStore(invalidMode),/途中のテスト/);
+});
+test('completed collection remains valid after an extra unique full-score challenge',()=>{
+ const s=newStore();
+ for(let i=0;i<17;i++)awardPerfect(s,{id:`won-${i}`,mode:'challenge',kind:'full',correct:81,total:81});
+ assert.equal(totalRewardTiles(validateStore(s).reward),16);
 });
