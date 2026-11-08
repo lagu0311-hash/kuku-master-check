@@ -41,8 +41,8 @@ const variantSets = {
   good:[['cat','jump'],['cat','star'],['cat','clap'],['cat','spin']],
   cheer:[['cat','coach'],['rabbit','coach'],['dog','weights'],['squirrel','coach']]
 };
-const positiveMessages=['やったね！','すごい！','そのちょうし！','ばっちり！','よくできたね！','正解！'];
-const encouragingMessages=['だいじょうぶ、つぎいこう！','れんしゅうで つよくなる！','がんばっていて えらい！','つぎも チャレンジ！','いっしょに おぼえよう！','その いっぽが すてき！'];
+const positiveMessages=['やったね！','すごい！','その調子！','ばっちり！','よくできたね！','正解！'];
+const encouragingMessages=['大丈夫、次いこう！','練習で強くなる！','頑張っていてえらい！','次もチャレンジ！','一緒に覚えよう！','その一歩が素敵！'];
 function pickVariant(set) {
   const arr=variantSets[set];let n=Math.floor(Math.random()*arr.length);
   if (arr.length>1 && n===state.previousVariant[set]) n=(n+1+Math.floor(Math.random()*(arr.length-1)))%arr.length;
@@ -78,33 +78,50 @@ function puzzle(index,newest=false) {
 }
 function rewardPanel(index,newest=false) {
   const p=store.reward.pictures[index];
-  return `<section class="panel reward-section"><h2>${p.unlocked===4?pictureNames[index]:`ひみつの絵 ${index+1}`}</h2>
+  return `<section class="panel reward-section"><h2>${p.unlocked===4?pictureNames[index]:`秘密の絵 ${index+1}`}</h2>
     ${p.unlocked===4?`<p class="muted">絵が完成したよ！ 動く絵を楽しもう！</p>
     <div class="reward-complete-art ${store.settings.effects==='off'?'no-motion':store.settings.effects==='low'?'low-motion':''}"><img src="${imagePath(index,store.settings.effects!=='normal')}" alt="${pictureNames[index]}" width="900" height="900"></div>`:
-    `<p class="muted">満点を取るたびに、1マス開くよ。何の絵かは、お楽しみ！</p>${puzzle(index,newest)}`}
+    `<p class="muted">満点を取るたびに、1マス開くよ。<ruby>何<rt>なん</rt></ruby>の絵かは、お楽しみ！</p>${puzzle(index,newest)}`}
     <p class="reward-progress">${p.unlocked===4?'完成！ おめでとう！':`${p.unlocked} / 4 マス　あと ${4-p.unlocked} 回で完成！`}</p>
   </section>`;
 }
 function gallery() {
   const r=store.reward;
-  return `<section class="panel"><h2>ひみつの絵 コレクション</h2><p class="muted">4つの絵があるよ。どんな絵かは、完成するまでひみつ！</p>
+  return `<section class="panel"><h2>秘密の絵 コレクション</h2><p class="muted">4つの絵があるよ。どんな絵かは、完成するまで秘密！</p>
   <div class="gallery-grid">${r.pictures.map((p,i)=>`<div class="gallery-card ${p.unlocked===4?'complete':''}">
     ${p.unlocked===4?`<img src="${imagePath(i,store.settings.effects!=='normal')}" alt="${pictureNames[i]}" width="900" height="900"><strong>${pictureNames[i]}</strong>`:
-    `<div class="gallery-secret" aria-hidden="true">🎁</div><strong>ひみつの絵 ${i+1}</strong>`}
-    <small>${p.unlocked===4?'完成！':p.unlocked?`${p.unlocked} / 4 マス`:currentRewardIndex(r)===i?'これから開くよ！':'まだひみつ'}</small>
+    `<div class="gallery-secret" aria-hidden="true">🎁</div><strong>秘密の絵 ${i+1}</strong>`}
+    <small>${p.unlocked===4?'完成！':p.unlocked?`${p.unlocked} / 4 マス`:currentRewardIndex(r)===i?'これから開くよ！':'まだ秘密'}</small>
   </div>`).join('')}</div></section>`;
 }
 function rubyText(root) {
   if (state.page==='parent') return;
   // The DOM is created solely from trusted UI strings and validated numeric records.
   const readings=new Map(Object.entries({
+    // Longest phrases first at the same position. Avoid context-free readings for 何/分.
+    '答え合わせ':'こたえあわせ','苦手克服':'にがてこくふく','何問':'なんもん',
+    '時間制限':'じかんせいげん','一歩':'いっぽ','一つ':'ひとつ',
     '九九':'くく','正解':'せいかい','不正解':'ふせいかい','満点':'まんてん','問題':'もんだい',
     '練習':'れんしゅう','挑戦':'ちょうせん','力試し':'ちからだめし','結果':'けっか','全部':'ぜんぶ',
     '記録':'きろく','完成':'かんせい','ご褒美':'ごほうび','花畑':'はなばたけ','星空':'ほしぞら',
     '猫':'ねこ','犬':'いぬ','動物':'どうぶつ','風船':'ふうせん','秘密':'ひみつ',
     '今日':'きょう','時間':'じかん','答え':'こたえ','開く':'ひらく','開いた':'ひらいた',
     '自分':'じぶん','回':'かい','絵':'え','枚':'まい','段':'だん','次':'つぎ',
-    '星':'ほし','休憩':'きゅうけい','再開':'さいかい','応援':'おうえん'
+    '星':'ほし','休憩':'きゅうけい','再開':'さいかい','応援':'おうえん','問':'もん',
+    '調子':'ちょうし','大丈夫':'だいじょうぶ','強く':'つよく','頑張った':'がんばった',
+    '頑張って':'がんばって','頑張り':'がんばり','一緒':'いっしょ',
+    '覚えてきた':'おぼえてきた','覚えよう':'おぼえよう','覚えた':'おぼえた',
+    '確かめ':'たしかめ','詳しい':'くわしい','設定':'せってい','素敵':'すてき',
+    '見る':'みる','見える':'みえる','増えて':'ふえて',
+    '続き':'つづき','続けよう':'つづけよう','続ける':'つづける','選ぼう':'えらぼう',
+    '進める':'すすめる','最後':'さいご','間違え':'まちがえ','優先':'ゆうせん',
+    '順番':'じゅんばん','途中':'とちゅう','戻る':'もどる',
+    '答える':'こたえる','入れて':'いれて','制限':'せいげん','考えて':'かんがえて',
+    '第':'だい','休み':'やすみ','準備':'じゅんび','休む':'やすむ',
+    '少し':'すこし','やり遂げた':'やりとげた','お疲れ':'おつかれ',
+    '最近':'さいきん','試して':'ためして','楽しみ':'たのしみ','楽しもう':'たのしもう',
+    '覚えて':'おぼえて','覚える':'おぼえる','端末':'たんまつ',
+    '保存':'ほぞん','少ない':'すくない','出る':'でる','取る':'とる',
   }));
   const keys=[...readings.keys()].sort((a,b)=>b.length-a.length);
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
@@ -134,7 +151,7 @@ function shell(body, narrow=false) {
   $app.innerHTML = `<div class="shell ${narrow ? 'narrow' : ''}">
     <header class="masthead"><span class="brand-mark" aria-hidden="true">★</span><span class="brand">九九マスターチェック</span></header>
     ${state.notice ? `<div class="notice" role="alert">${state.notice}</div>` : ''}
-    ${body}<footer>がんばった分だけ、できることがふえていくよ。<span class="footnote"> 記録はこの端末に保存されます。</span></footer>
+    ${body}<footer>${state.page==='parent'?'頑張った分だけ、できることが増えていくよ。':'頑張った<ruby>分<rt>ぶん</rt></ruby>だけ、できることが増えていくよ。'}<span class="footnote"> 記録はこの端末に保存されます。</span></footer>
   </div>`;
   rubyText($app);
 }
@@ -143,31 +160,31 @@ const secondary = (action,text)=>btn(action,text,'secondary');
 const header = (title,desc='')=>`<div class="section-heading"><h1>${title}</h1>${desc?`<p>${desc}</p>`:''}</div>`;
 function renderHome() {
   const progress = masteryCounts(store.records);
-  const resumed = store.active ? `<div class="resume-panel"><div><b>つづきのテストがあるよ</b><p>${names[store.active.kind]} ・ ${store.active.index + 1} / ${store.active.questions.length} もん</p></div>${btn('resume-active','つづきから ▶','primary')}</div>` : '';
-  shell(`${header('きょうも九九にチャレンジ！','じぶんのペースで、いっぽずつ。')}
-  <div class="hero"><div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 もん</b><small>「ばっちり！」になった もんだい</small></div></div>
+  const resumed = store.active ? `<div class="resume-panel"><div><b>続きのテストがあるよ</b><p>${names[store.active.kind]} ・ ${store.active.index + 1} / ${store.active.questions.length} 問</p></div>${btn('resume-active','続きから ▶','primary')}</div>` : '';
+  shell(`${header('今日も九九にチャレンジ！','自分のペースで、一歩ずつ。')}
+  <div class="hero"><div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 問</b><small>「ばっちり！」になった問題</small></div></div>
   ${resumed}
   <div class="home-grid">
-    <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>練習</strong><small>こたえを たしかめながら</small></button>
-    <button class="home-card lavender" data-action="setup-challenge"><span class="home-icon">🏅</span><strong>力試し</strong><small>どのくらい おぼえたかな？</small></button>
-    <button class="home-card peach" data-action="child"><span class="home-icon">⭐</span><strong><ruby>私<rt>わたし</rt></ruby>の<ruby>記録<rt>きろく</rt></ruby></strong><small>がんばった きろくをみる</small></button>
-    <button class="home-card gray" data-action="parent"><span class="home-icon">📊</span><strong>おうちのひと</strong><small>くわしい きろくと せってい</small></button>
+    <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>練習</strong><small>答えを確かめながら</small></button>
+    <button class="home-card lavender" data-action="setup-challenge"><span class="home-icon">🏅</span><strong>力試し</strong><small>どのくらい覚えたかな？</small></button>
+    <button class="home-card peach" data-action="child"><span class="home-icon">⭐</span><strong><ruby>私<rt>わたし</rt></ruby>の<ruby>記録<rt>きろく</rt></ruby></strong><small>頑張った記録を見る</small></button>
+    <button class="home-card gray" data-action="parent"><span class="home-icon">📊</span><strong>おうちのひと</strong><small>詳しい記録と設定</small></button>
   </div>`,false);
 }
 function renderSetup() {
-  shell(`${header(state.mode === 'practice' ? 'れんしゅうを えらぼう' : '81もんの ちからだめし',
-    state.mode === 'practice' ? 'こたえを たしかめながら すすめるよ。' : '81もんすべてに チャレンジ！ さいごに こたえあわせ！')}
+  shell(`${header(state.mode === 'practice' ? '練習を選ぼう' : '81問の力試し',
+    state.mode === 'practice' ? '答えを確かめながら進めるよ。' : '81問すべてにチャレンジ！ 最後に答え合わせ！')}
     <div class="panel">${state.mode==='practice'?`<h2>どのテストにする？</h2><div class="choice-grid">
-      ${[['stage','段ごと','9もん'],['mixed','まぜこぜ','10・20もん'],['weak','苦手克服','10・20もん']]
+      ${[['stage','段ごと','9問'],['mixed','まぜこぜ','10・20問'],['weak','苦手克服','10・20問']]
        .map(([kind,label,sub])=>`<button class="choice ${state.kind===kind?'picked':''}" data-action="choose-kind" data-kind="${kind}" aria-pressed="${state.kind===kind}"><strong>${label}</strong><small>${sub}</small></button>`).join('')}
     </div>
-    ${state.kind === 'stage'?`<label class="control-label" for="stage">なんのだん？</label><select id="stage" data-setting="stage">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${state.stage===i+1?'selected':''}>${i+1} のだん</option>`).join('')}</select>`:''}
-    ${['mixed','weak'].includes(state.kind)?`<label class="control-label" for="count">なんもん やる？</label><select id="count" data-setting="count"><option value="10" ${state.count===10?'selected':''}>10 もん</option><option value="20" ${state.count===20?'selected':''}>20 もん</option></select>`:''}
-    ${state.kind==='weak'?`<p class="muted small">まちがえた問題や、こたえるのに時間がかかった問題をゆうせんするよ。まだ記録が少ないときは、ほかの問題も出るよ。</p>`:''}`:
-    `<h2>ぜんぶで 81もん</h2><p class="muted small">1のだんから9のだんまで、じゅんばんは ランダム！</p>`}
-    ${state.mode==='challenge'?`<p class="muted small">9もんごとに おやすみできるよ。とちゅうで やめても、つづきからできるよ。</p>`:''}
+    ${state.kind === 'stage'?`<label class="control-label" for="stage"><ruby>何<rt>なん</rt></ruby>の段？</label><select id="stage" data-setting="stage">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${state.stage===i+1?'selected':''}>${i+1} のだん</option>`).join('')}</select>`:''}
+    ${['mixed','weak'].includes(state.kind)?`<label class="control-label" for="count">何問やる？</label><select id="count" data-setting="count"><option value="10" ${state.count===10?'selected':''}>10 もん</option><option value="20" ${state.count===20?'selected':''}>20 もん</option></select>`:''}
+    ${state.kind==='weak'?`<p class="muted small">間違えた問題や、答えるのに時間がかかった問題を優先するよ。まだ記録が少ないときは、ほかの問題も出るよ。</p>`:''}`:
+    `<h2>全部で81問</h2><p class="muted small">1の段から9の段まで、順番はランダム！</p>`}
+    ${state.mode==='challenge'?`<p class="muted small">9問ごとにお休みできるよ。途中でやめても、続きからできるよ。</p>`:''}
     ${btn('start','スタート！','primary wide big')}
-    ${secondary('home','← もどる')}
+    ${secondary('home','← 戻る')}
     </div>`,true);
 }
 function renderQuiz() {
@@ -176,13 +193,13 @@ function renderQuiz() {
     const f=state.feedback;
     const atEnd=!active;
     const v=state.variant || pickVariant(f.correct?'correct':'wrong');
-    shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>こたえあわせ</span></div>
+    shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>答え合わせ</span></div>
       <div class="panel centered feedback ${f.correct?'is-correct':'is-incorrect'}">
       ${f.correct?confetti('small'):''}${animalScene(v,f.correct?'success':'encourage')}
-      <h1>${f.correct?v.message:'まちがえても 大丈夫！'}</h1>
+      <h1>${f.correct?v.message:'間違えても大丈夫！'}</h1>
       <p class="equation">${f.a} × ${f.b} = ${f.a*f.b}</p>
-      ${!f.correct?`<p>${v.message}　こたえは <strong>${f.a*f.b}</strong> だよ。</p>`:'<p>せいかい！　すてきだね！</p>'}
-      ${btn('next',atEnd?'けっかを みる ▶':'つぎのもんだい ▶','primary wide big')}</div>`,true);
+      ${!f.correct?`<p>${v.message}　答えは <strong>${f.a*f.b}</strong> だよ。</p>`:'<p>正解！　素敵だね！</p>'}
+      ${btn('next',atEnd?'結果を見る ▶':'次の問題 ▶','primary wide big')}</div>`,true);
     return;
   }
   if (!active) return renderHome();
@@ -191,17 +208,17 @@ function renderQuiz() {
   const q=active.questions[idx];
   const percent=Math.round(idx/total*100);
   if (state.paused) {
-    shell(`<div class="panel centered pause"><span class="large-emoji">☕</span><h1>ひとやすみ</h1><p>じゅんびができたら つづけよう！</p>
-     <p class="muted">${idx+1} / ${total} もん</p>${btn('unpause','つづける ▶','primary wide big')}${secondary('home','ホームへ')}</div>`,true);
+    shell(`<div class="panel centered pause"><span class="large-emoji">☕</span><h1>ひと休み</h1><p>準備ができたら続けよう！</p>
+     <p class="muted">${idx+1} / ${total} 問</p>${btn('unpause','続ける ▶','primary wide big')}${secondary('home','ホームへ')}</div>`,true);
     return;
   }
-  shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>${names[active.mode]} ・ ${idx+1} / ${total} もん</span>${secondary('pause','やすむ')}</div>
+  shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>${names[active.mode]} ・ ${idx+1} / ${total} 問</span>${secondary('pause','休む')}</div>
     <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
-    <section class="quiz-card" aria-label="もんだい"><div class="question-label">だい ${idx+1} もん</div><h1 class="equation">${q.a} × ${q.b} = <span class="question-mark">？</span></h1>
-    <div class="answer-box" aria-live="polite" aria-label="入力した答え">${state.answer || '<span class="placeholder">こたえをいれてね</span>'}</div>
+    <section class="quiz-card" aria-label="もんだい"><div class="question-label">第${idx+1}問</div><h1 class="equation">${q.a} × ${q.b} = <span class="question-mark">？</span></h1>
+    <div class="answer-box" aria-live="polite" aria-label="入力した答え">${state.answer || '<span class="placeholder">答えを入れてね</span>'}</div>
     <div class="numberpad">${['1','2','3','4','5','6','7','8','9','けす','0','⌫'].map(v=>`<button class="numkey ${v==='けす'||v==='⌫'?'utility':''}" data-action="digit" data-value="${v}" aria-label="${v==='⌫'?'ひとつけす':v}">${v}</button>`).join('')}</div>
-    ${btn('answer','こたえる！','primary wide big',state.answer?'':'disabled')}
-    <p class="muted small center">じかんせいげんは ないよ。ゆっくり かんがえてね。</p></section>`,true);
+    ${btn('answer','答える！','primary wide big',state.answer?'':'disabled')}
+    <p class="muted small center">時間制限はないよ。ゆっくり考えてね。</p></section>`,true);
   startClock();
 }
 function renderResult() {
@@ -210,39 +227,39 @@ function renderResult() {
   const records=store.records.filter(r=>r.sessionId===session.id);
   const band=scoreBand(session.correct,session.total);
   const bands={
-    perfect:{title:'パーフェクト！',subtitle:'ぜんぶ せいかい！ すごい！',type:'good',confetti:'grand'},
-    great:{title:'すごい！',subtitle:'とっても がんばったね！',type:'good',confetti:'small'},
-    good:{title:'がんばったね！',subtitle:'つぎも チャレンジしよう！',type:'good'},
-    keepgoing:{title:'ひとつずつ 強くなる！',subtitle:'練習すると もっと できるよ！',type:'cheer'},
-    training:{title:'少しずつ 覚えていこう！',subtitle:'筋トレどうぶつと いっしょに 練習だ！',type:'cheer'},
-    courage:{title:'チャレンジ できたね！',subtitle:'いっしょに すこしずつ おぼえよう！',type:'cheer'}
+    perfect:{title:'パーフェクト！',subtitle:'全部正解！ すごい！',type:'good',confetti:'grand'},
+    great:{title:'すごい！',subtitle:'とっても頑張ったね！',type:'good',confetti:'small'},
+    good:{title:'頑張ったね！',subtitle:'次もチャレンジしよう！',type:'good'},
+    keepgoing:{title:'一つずつ強くなる！',subtitle:'練習すると もっと できるよ！',type:'cheer'},
+    training:{title:'少しずつ 覚えていこう！',subtitle:'筋トレ動物と一緒に練習だ！',type:'cheer'},
+    courage:{title:'チャレンジ できたね！',subtitle:'一緒に少しずつ覚えよう！',type:'cheer'}
   };
   const b=bands[band];
   const variant=state.variant || pickVariant(b.type);
   const celebration=session.mode==='challenge' && band==='perfect';
-  shell(`${header('よく がんばったね！','さいごまで やりとげたね！')}
+  shell(`${header('よく頑張ったね！','最後までやり遂げたね！')}
     <div class="panel centered result result-${band}">
       ${b.confetti?confetti(b.confetti):''}
       ${animalScene(variant,['keepgoing','training','courage'].includes(band)?'encourage':'success')}
-      <h2>${session.mode==='challenge'?b.title:'れんしゅう おつかれさま！'}</h2>
-      <div class="score">${session.correct} <span>/ ${session.total} もん</span></div>
-      <p>${session.mode==='challenge'?b.subtitle:'きょうも たくさん がんばったね！'}</p>
+      <h2>${session.mode==='challenge'?b.title:'練習お疲れさま！'}</h2>
+      <div class="score">${session.correct} <span>/ ${session.total} 問</span></div>
+      <p>${session.mode==='challenge'?b.subtitle:'今日もたくさん頑張ったね！'}</p>
       <p class="muted small">${names[session.mode]} ・ ${names[session.kind]}</p>
-      ${celebration?`<div class="reward-alert">${state.lastAward?state.lastAward.collectionComplete?'4枚の絵が全部完成！ コンプリート！':state.lastAward.pictureComplete?'ひみつの絵が 完成したよ！':'ご褒美の絵が 1マス 開いたよ！':'4枚の絵は もう全部完成しているよ！'}</div>`:''}
+      ${celebration?`<div class="reward-alert">${state.lastAward?state.lastAward.collectionComplete?'4枚の絵が全部完成！ コンプリート！':state.lastAward.pictureComplete?'秘密の絵が 完成したよ！':'ご褒美の絵が 1マス 開いたよ！':'4枚の絵はもう全部完成しているよ！'}</div>`:''}
     </div>
     ${celebration&&state.lastAward?rewardPanel(state.lastAward.pictureIndex,true):''}${celebration&&state.lastAward?.collectionComplete?'<div class="panel centered full-collection-banner"><h2>コンプリート！</h2><p>4枚の絵が 全部完成したよ！</p></div>':''}
-    ${session.mode === 'challenge' ? `<details class="panel"><summary>こたえあわせ（${session.total} もん）</summary>
+    ${session.mode === 'challenge' ? `<details class="panel"><summary>答え合わせ（${session.total}問）</summary>
       <div class="answer-list">${records.map(r=>`<div class="answer-item ${r.correct?'ok':'no'}"><span>${r.a} × ${r.b} = ${r.a*r.b}</span><span>${r.correct?'○':`×（${r.input}）`}</span></div>`).join('')}</div></details>` : ''}
-    ${btn('setup-practice','また れんしゅうする','primary wide')}
+    ${btn('setup-practice','また練習する','primary wide')}
     ${session.mode==='challenge'?secondary('reward','ご褒美の絵を 見る'):''}
     ${secondary('home','ホームへ')}`,true);
 }
 function renderReward() {
   const idx=currentRewardIndex(store.reward);
   const count=totalRewardTiles(store.reward);
-  shell(`${header('ひみつの ご褒美の絵','満点を取ると、絵が1マスずつ開くよ！')}
+  shell(`${header('秘密のご褒美の絵','満点を取ると、絵が1マスずつ開くよ！')}
   <div class="panel centered"><h2>${count===16?'コンプリート！ 4枚全部完成！':`${count} / 16 マス 開いたよ！`}</h2>
-  <p class="muted">何の絵かは、完成してからのお楽しみ！</p></div>
+  <p class="muted"><ruby>何<rt>なん</rt></ruby>の絵かは、完成してからのお楽しみ！</p></div>
   ${idx>=0?rewardPanel(idx):'<div class="panel centered full-collection-banner"><h2>大成功！</h2><p>4枚全部集めたね！</p></div>'}
   ${gallery()}
   ${secondary('home','← ホームへ')}`,false);
@@ -251,12 +268,12 @@ function renderReward() {
 function renderChild() {
   const counts = masteryCounts(store.records);
   const recent = store.sessions.slice(-5).reverse();
-  shell(`${header('<ruby>私<rt>わたし</rt></ruby>の<ruby>記録<rt>きろく</rt></ruby>','きょうまでの がんばりが みえるよ！')}
-    <div class="panel centered"><div class="award-stars">★ ★ ★</div><h2>ばっちり！ は ${counts.mastered} もん</h2>
-    <p>おぼえてきた もんだい：${counts.learning} もん</p><p class="muted small">これからも じぶんのペースでね。</p></div>
-    <div class="panel"><h2>さいきんの チャレンジ</h2>
-    ${recent.length?recent.map(s=>`<div class="history-item"><span>${new Date(s.completedAt).toLocaleDateString('ja-JP')}　${names[s.kind]}</span><b>${s.correct} / ${s.total}</b></div>`).join(''):'<p class="muted">まだ きろくがないよ。ためしてみよう！</p>'}</div>
-    ${secondary('reward','ひみつの ご褒美の絵')}
+  shell(`${header('<ruby>私<rt>わたし</rt></ruby>の<ruby>記録<rt>きろく</rt></ruby>','今日までの頑張りが見えるよ！')}
+    <div class="panel centered"><div class="award-stars">★ ★ ★</div><h2>「ばっちり！」は${counts.mastered}問</h2>
+    <p>覚えてきた問題：${counts.learning}問</p><p class="muted small">これからも自分のペースでね。</p></div>
+    <div class="panel"><h2>最近のチャレンジ</h2>
+    ${recent.length?recent.map(s=>`<div class="history-item"><span>${new Date(s.completedAt).toLocaleDateString('ja-JP')}　${names[s.kind]}</span><b>${s.correct} / ${s.total}</b></div>`).join(''):'<p class="muted">まだ記録がないよ。試してみよう！</p>'}</div>
+    ${secondary('reward','秘密のご褒美の絵')}
     ${secondary('home','← ホームへ')}`,true);
 }
 function renderParent() {
@@ -271,11 +288,11 @@ function renderParent() {
     <div class="stat-grid">
       <div class="stat"><b>${counts.mastered}<small> / 81</small></b><span>ばっちり</span></div>
       <div class="stat"><b>${81-counts.unseen}<small> / 81</small></b><span>出題済み</span></div>
-      <div class="stat"><b>${challenges.length?Math.round(correct.length/challenges.length*100)+'%':'—'}</b><span>ちからだめし累計正答率</span></div>
+      <div class="stat"><b>${challenges.length?Math.round(correct.length/challenges.length*100)+'%':'—'}</b><span>力試し累計正答率</span></div>
       <div class="stat"><b>${secMedian===null?'—':(secMedian/1000).toFixed(1)+'秒'}</b><span>正解時の回答時間中央値</span></div>
     </div>
     <div class="panel"><h2>81問の習得マップ</h2><p class="muted small">行が「○の段」、列が「×□」。マスを押すとその問題の記録を表示します。</p>
-    <div class="legend"><span><i class="dot unseen"></i>未出題</span><span><i class="dot practice"></i>れんしゅう中</span><span><i class="dot learning"></i>おぼえてきた</span><span><i class="dot mastered"></i>ばっちり</span></div>
+    <div class="legend"><span><i class="dot unseen"></i>未出題</span><span><i class="dot practice"></i>練習中</span><span><i class="dot learning"></i>覚えてきた</span><span><i class="dot mastered"></i>ばっちり</span></div>
     <div class="map-wrap"><div class="mastery-map"><div class="map-axis">×</div>${Array.from({length:9},(_,i)=>`<div class="map-axis">${i+1}</div>`).join('')}
     ${Array.from({length:9},(_,i)=>`<div class="map-axis">${i+1}</div>${Array.from({length:9},(_,j)=>`<button class="map-cell ${masteryOf(i+1,j+1,store.records)} ${detail?.a===i+1&&detail?.b===j+1?'selected':''}" data-action="cell" data-a="${i+1}" data-b="${j+1}" title="${i+1}×${j+1}: ${masteryNames[masteryOf(i+1,j+1,store.records)]}" aria-label="${i+1}かける${j+1}: ${masteryNames[masteryOf(i+1,j+1,store.records)]}">${j+1}</button>`).join('')}`).join('')}
     </div></div>
@@ -284,7 +301,7 @@ function renderParent() {
     </div>
     <div class="panel"><h2>段別の状況</h2><table><thead><tr><th>段</th><th>出題済み</th><th>直近正解</th><th>ばっちり</th></tr></thead><tbody>
       ${stats.map(s=>`<tr><th>${s.stage}の段</th><td>${s.tested}/9</td><td>${s.latestCorrect}/9</td><td>${s.mastered}/9</td></tr>`).join('')}
-    </tbody></table><p class="muted small">この集計は「ちからだめし」の回答のみを対象にします。未出題は正解数に含めません。</p></div>
+    </tbody></table><p class="muted small">この集計は「力試し」の回答のみを対象にします。未出題は正解数に含めません。</p></div>
     <div class="panel"><h2>履歴とデータ管理</h2><p class="muted small">保存先はこのブラウザです。主にAndroidタブレットのChromeで使います。端末間で自動同期はされません。</p>
       <label class="control-label" for="effects">アニメーションの おおきさ</label>
       <select id="effects" data-setting="effects"><option value="normal" ${store.settings.effects==='normal'?'selected':''}>ふつう（おすすめ）</option><option value="low" ${store.settings.effects==='low'?'selected':''}>ひかえめ</option><option value="off" ${store.settings.effects==='off'?'selected':''}>オフ</option></select>
