@@ -7,8 +7,8 @@ body{background:radial-gradient(ellipse at 12% 2%,#eff8ff 0,transparent 42%),rad
 .home-card.mint{background:#e2f1ff}.home-card.lavender{background:#f0e8ff}.home-card.peach{background:#ffe8ec}.home-card.gray{background:#e1f4e9}
 .home-card{border-color:#e1dde9}
 .hero{background:linear-gradient(105deg,#dfedff,#fff2df);border:1px solid #d9e1f0}
-.hero-cat{width:94px;height:84px;overflow:hidden;display:grid;place-items:center;flex-shrink:0}
-.hero-cat .animal{width:89px;transform:translateY(-2px)}
+.hero-cat{width:110px;height:104px;overflow:hidden;display:grid;place-items:center;flex-shrink:0}
+.hero-cat .animal{width:108px;transform:translateY(-1px)}
 .feedback,.result{position:relative;overflow:hidden;isolation:isolate}
 .feedback>*:not(.confetti),.result>*:not(.confetti){position:relative;z-index:1}
 .feedback.is-correct{background:linear-gradient(145deg,#edf7ff,#fff7e5 52%,#fff0f8)}

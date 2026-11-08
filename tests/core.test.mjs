@@ -137,3 +137,28 @@ test('completed collection remains valid after an extra unique full-score challe
  for(let i=0;i<17;i++)awardPerfect(s,{id:`won-${i}`,mode:'challenge',kind:'full',correct:81,total:81});
  assert.equal(totalRewardTiles(validateStore(s).reward),16);
 });
+
+// v1.4 stage 3: the original illustrated animals keep the existing class/pose contract.
+import { animalSvg } from '../docs/animals.js';
+test('four storybook animals preserve both distinct arms and animation hooks in every used pose',()=>{
+  const types=['cat','dog','squirrel','rabbit'];
+  const poses=['jump','clap','spin','star','weights','coach'];
+  for (const type of types) for (const pose of poses) {
+    const svg=animalSvg(type,pose);
+    assert.match(svg,new RegExp(`class="animal animal-${type} pose-${pose}"`));
+    assert.match(svg,/<g class="animal-friend">/);
+    assert.equal((svg.match(/class="arm-left"/g)||[]).length,1);
+    assert.equal((svg.match(/class="arm-right"/g)||[]).length,1);
+    assert.match(svg,/viewBox="0 0 220 238"/);
+    assert.doesNotMatch(svg,/<(?:image|script|foreignObject)\b/i);
+  }
+});
+test('cat scarf is pastel blue, other animal accents are warm and no external assets are used',()=>{
+  const cat=animalSvg('cat','star');
+  assert.match(cat,/#8fc5ef/);
+  for (const kind of ['dog','squirrel','rabbit']) {
+    const svg=animalSvg(kind,'jump');
+    assert.doesNotMatch(svg,/#8fc5ef/);
+    assert.doesNotMatch(svg,/(?:href|src)=\"https?:\/\//);
+  }
+});
