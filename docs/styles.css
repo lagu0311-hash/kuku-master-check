@@ -94,3 +94,20 @@ button rt{color:inherit}
 .hero-cat .animal{width:96px;height:112px}
 .animal-scene{height:245px;margin:0 auto 14px}
 @media(max-width:450px){.animal-scene{height:216px;margin-bottom:16px}}
+
+/* C05 release repair: watercolor-compatible accessories over unchanged approved art. */
+.animal-friend{position:relative;}
+.pose-weights{position:absolute;inset:0;pointer-events:none;}
+.pose-weights .dog-dumbbell{position:absolute;width:28%;height:auto;filter:drop-shadow(0 1px 1px #b9988466)}
+.pose-weights .dog-dumbbell:first-child{left:15%;top:44%;transform:rotate(-22deg)}
+.pose-weights .dog-dumbbell:last-child{right:15%;top:44%;transform:rotate(22deg)}
+.cheer-bubble{position:absolute;right:-10%;top:17%;white-space:nowrap;
+  padding:7px 10px;border-radius:15px;background:#fff8df;color:#875e40;
+  border:2.5px solid #bb9072;font-size:clamp(12px,2vw,16px);font-weight:800;
+  line-height:1.2;box-shadow:0 3px 0 #edd8ac99;transform:rotate(7deg);pointer-events:none}
+.cheer-bubble::after{content:'';position:absolute;bottom:-10px;left:20%;width:13px;height:13px;
+  background:#fff8df;border-right:2.5px solid #bb9072;border-bottom:2.5px solid #bb9072;
+  transform:rotate(45deg)}
+.animal-squirrel .cheer-bubble{right:auto;left:-10%;transform:rotate(-7deg)}
+.animal-rabbit .cheer-bubble{right:-15%;top:33%}
+@media(max-width:450px){.cheer-bubble{font-size:12px;padding:5px 7px;}}
