@@ -137,3 +137,29 @@ test('completed collection remains valid after an extra unique full-score challe
  for(let i=0;i<17;i++)awardPerfect(s,{id:`won-${i}`,mode:'challenge',kind:'full',correct:81,total:81});
  assert.equal(totalRewardTiles(validateStore(s).reward),16);
 });
+
+// C05 artwork integration: no code-drawn SVG replacement and all approved crops exist.
+import { animalSvg } from '../docs/animals.js';
+import { existsSync, statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+const assetBase=resolve(dirname(fileURLToPath(import.meta.url)),'../docs/assets/characters');
+test('approved watercolor sprite exists for every animal and used pose',()=>{
+  for(const type of ['cat','dog','rabbit','squirrel']){
+    for(const pose of ['home','jump','spin','clap','star','weights','coach']){
+      const markup=animalSvg(type,pose);
+      const filename=markup.match(/src="\.\/assets\/characters\/([a-z-]+\.webp)"/)?.[1];
+      assert.ok(filename,`${type}/${pose}: missing relative image`);
+      const file=resolve(assetBase,filename);
+      assert.ok(existsSync(file),`${filename}: missing asset`);
+      assert.ok(statSync(file).size>1000,`${filename}: empty sprite`);
+      assert.match(markup,/class="animal-friend"/);
+      assert.doesNotMatch(markup,/<path\b|<svg\b|https?:\/\//i);
+    }
+  }
+});
+test('home artwork uses the approved cat and source keeps both arms',()=>{
+  const html=animalSvg('cat','home');
+  assert.match(html,/cat-home\.webp/);
+  assert.match(html,/aria-label="ねこのイラスト"/);
+});

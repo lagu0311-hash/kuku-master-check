@@ -145,7 +145,7 @@ function renderHome() {
   const progress = masteryCounts(store.records);
   const resumed = store.active ? `<div class="resume-panel"><div><b>つづきのテストがあるよ</b><p>${names[store.active.kind]} ・ ${store.active.index + 1} / ${store.active.questions.length} もん</p></div>${btn('resume-active','つづきから ▶','primary')}</div>` : '';
   shell(`${header('きょうも九九にチャレンジ！','じぶんのペースで、いっぽずつ。')}
-  <div class="hero"><div class="hero-cat">${animalSvg('cat','star')}</div><div><b>${progress.mastered} / 81 もん</b><small>「ばっちり！」になった もんだい</small></div></div>
+  <div class="hero"><div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 もん</b><small>「ばっちり！」になった もんだい</small></div></div>
   ${resumed}
   <div class="home-grid">
     <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>練習</strong><small>こたえを たしかめながら</small></button>

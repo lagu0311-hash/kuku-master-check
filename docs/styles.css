@@ -74,3 +74,23 @@ button rt{color:inherit}
 .full-collection-banner h2{color:#83639c;font-size:32px}
 @media(min-width:760px){.gallery-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.reward-complete-art img{animation:none!important}}
+
+/* v1.4 approved illustration: original watercolor pixels + whole-art motion.
+   No hand-drawn SVG replacement; no per-limb deformation of approved characters. */
+.animal{position:relative;display:block;overflow:visible;isolation:isolate;aspect-ratio:1/1;max-height:100%;}
+.animal-friend{display:block;width:100%;height:100%;transform-origin:50% 82%;}
+.animal-friend img{display:block;width:100%;height:100%;object-fit:contain;mix-blend-mode:multiply;user-select:none;-webkit-user-drag:none;}
+.animal-scene.encourage:not(.still) .animal-friend{animation:character-cheer 1.45s ease-in-out 2;}
+.animal-scene.encourage.gentle .animal-friend{animation-duration:2s;}
+.animal-scene.still .animal-friend,.animal-scene.still .animal-friend img{animation:none!important;}
+@keyframes character-cheer{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-6px) rotate(-4deg)}70%{transform:translateY(-2px) rotate(4deg)}}
+@media(prefers-reduced-motion:reduce){.animal-scene .animal-friend{animation:none!important;}}
+/* Keep the full approved cat visible in the home hero (including both paws). */
+.hero-cat{width:105px;height:120px;overflow:visible;}
+.hero-cat .animal{width:105px;height:120px;transform:none;}
+@media(max-width:360px){.hero-cat{width:92px;height:110px}.hero-cat .animal{width:92px;height:110px}}
+/* Reserve the illustrated silhouette's full height so it never overlays result text. */
+.hero-cat{width:96px;height:112px}
+.hero-cat .animal{width:96px;height:112px}
+.animal-scene{height:245px;margin:0 auto 14px}
+@media(max-width:450px){.animal-scene{height:216px;margin-bottom:16px}}
