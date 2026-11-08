@@ -79,3 +79,26 @@
 検証（ローカル環境）：`npm test` **24/24 PASS**。`node --check` 3件 PASS。ブラウザ内モック操作 **33/33 + 13/13 PASS**。5演出の画像読み込み・目視確認済み。作業ブランチ上での実HTTP配信、GitHub Pagesの本番動作、Android Chrome実機確認は**未実施**。画像見本の所有者による最終視覚確認も未了。
 
 **公開判断：HOLD（作業ブランチに限定）。** 監査対象の完成絵の表示、Android Chrome実機での表示・入力・動作の確認、所有者の公開承認が揃うまで `main` へ統合しない。
+
+## 2026-11-08 筋トレ／応援ポーズの原画限定差し替え（未公開）
+
+- 直前のC05小道具合成版は利用者の追加選択により不採用。新しい原画 `a_bright_watercolor_style_illustrated_update_repo.png` の**動物部分だけ**を抽出し、8点の `*-alt.webp` として格納した。背景、数値、公開判定の文字は一切使用しない。
+- `weights/coach` の画像参照以外は変更しない。犬の小さな後付けダンベル、吹き出しのSVG/CSSは撤去。
+- 背景透過で犬の耳を一部誤除去した試作品は不採用。犬の耳の領域を保護して切り出し直し、全8点の輪郭を一覧で目視確認した。
+- 保存ロジック、81問、ルビ、既存のホーム・正解画像11点、ご褒美原画8点のSHAを固定して独立照合する。
+- `npm test`、`node --check`、Chromium内画像描画・読み込み、GitHub差分の確認は実施記録に基づき報告する。**Android Chrome実機の確認と本番公開は今回行わない。**
+
+**追加検証（限定差し替え）**：`npm test` は **29/29 PASS**、`node --check`（app/core/animals）PASS。ChromiumのオフラインDOM試験 **33/33 + 13/13 PASS**、8素材の描画・読み込み **8/8 PASS**。Android Chrome実機とGitHub Pages実配信は引き続き未実施。
+
+**採用参照画像 SHA-256**：`4c128e5520ebace68fe9382780c2cda5a82413527754cd8dbe4704adaf53cfa3`。切り出し素材：
+
+- `cat-coach-alt.webp`：30664 bytes、SHA-256 `47be98cb0af182e7feb996f029ddac3bcb055125fddd264161320c4be7e2c94f`
+- `cat-weights-alt.webp`：25818 bytes、SHA-256 `b4cadaac9b63b299cfab8b577fee967cfda1eadff10e1ae68600d6d465da85c0`
+- `dog-coach-alt.webp`：29656 bytes、SHA-256 `3345624868ea77db8e3b6ad339dcb3f3f8f230a3d962a8ae959cefadf36422f0`
+- `dog-weights-alt.webp`：32280 bytes、SHA-256 `7fa843b2abed5decb0dd11177bcd84d7eb973104810f227a2bb885fcb289155d`
+- `rabbit-coach-alt.webp`：26800 bytes、SHA-256 `8fdf73cf28ca582e0ff4b21600ead3c8278f37eeea0edc452c76edd1c1b1743c`
+- `rabbit-weights-alt.webp`：25020 bytes、SHA-256 `141cf19d51d9df0651c45f930b4ed8963b28869bb07a441dd0699bc5e15cedaf`
+- `squirrel-coach-alt.webp`：25400 bytes、SHA-256 `0c4ba2d59541402d5ba40743b383398d80728dd255bcfdeecead2f4fc64579f0`
+- `squirrel-weights-alt.webp`：28278 bytes、SHA-256 `f565d69f0323cb00f34cf9fc9810109d8f2e30f1b7050bdd84127fe74c79730e`
+
+最終公開判断：**HOLD**（既存公開v1.3を維持）。

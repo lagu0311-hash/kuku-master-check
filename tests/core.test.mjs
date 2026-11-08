@@ -155,8 +155,7 @@ test('approved watercolor sprite exists for every animal and used pose',()=>{
       assert.ok(statSync(file).size>1000,`${filename}: empty sprite`);
       assert.match(markup,/class="animal-friend"/);
       assert.doesNotMatch(markup,/https?:\/\//i);
-      if(type==='dog'&&pose==='weights') assert.match(markup,/<svg class="pose-accessory dog-dumbbell"/);
-      else assert.doesNotMatch(markup,/<svg\b/i);
+      assert.doesNotMatch(markup,/<svg\b/i);
     }
   }
 });
