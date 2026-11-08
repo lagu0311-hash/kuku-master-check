@@ -11,10 +11,10 @@ export const localDate = (d = new Date()) => {
   return `${y}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 export const REWARD_PICTURES = Object.freeze([
-  {id:'flower-cat', image:'reward-flower.svg'},
-  {id:'starry-cat', image:'reward-stars.svg'},
-  {id:'picnic-friends', image:'reward-picnic.svg'},
-  {id:'balloon-cat', image:'reward-balloon.svg'}
+  {id:'flower-cat', image:'rewards/01_flower_cat__7D87821B-0515-4E82-B91C-AFCD6444CC38.jpeg'},
+  {id:'starry-cat', image:'rewards/02_starry_cat__E011D51A-3ACD-4527-A4D8-2C1536AE6F7E.jpeg'},
+  {id:'picnic-friends', image:'rewards/03_picnic_friends__1067876E-2918-4A31-98E9-E59F62885D4E.jpeg'},
+  {id:'balloon-cat', image:'rewards/04_balloon_cat__751C9A4F-F0E0-4CBF-8F8C-A6E1B398D1A1.jpeg'}
 ]);
 export const EFFECTS = Object.freeze(['normal','low','off']);
 export function randomOrder(random=Math.random) { return shuffle([0,1,2,3],random); }

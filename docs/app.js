@@ -65,22 +65,43 @@ function animalScene(variant, kind='success') {
     <span class="scene-spark left" aria-hidden="true">✦</span>${animalSvg(variant.type,variant.pose)}<span class="scene-spark right" aria-hidden="true">✧</span></div>`;
 }
 const pictureNames=['花畑の猫ちゃん','星空の猫ちゃん','ピクニック動物たち','青い風船の猫ちゃん'];
-function imagePath(index, still=false){const filename=REWARD_PICTURES[index].image;return `./assets/${still?filename.replace('.svg','-still.svg'):filename}`;}
+// Approved JPEG artwork is displayed byte-for-byte. Animations are separate
+// DOM/CSS overlays and appear only after a picture is completely unlocked.
+function imagePath(index){return `./assets/${REWARD_PICTURES[index].image}`;}
+const rewardThemes=['flower','stars','picnic','balloon'];
+const rewardDecorations=[
+  ['petal one','petal two','sun-glint three','butterfly four'],
+  ['twinkle one','twinkle two','shooting-star three'],
+  ['sun-patch one','leaf two','sun-patch three'],
+  ['glimmer one','glimmer two','soft-light three']
+];
+function rewardEffectMarkup(index) {
+  if(store.settings.effects==='off') return '';
+  return rewardDecorations[index].map(part=>`<span class="reward-effect ${part}" aria-hidden="true"></span>`).join('');
+}
+function rewardArt(index, galleryView=false){
+  const setting=store.settings.effects;
+  const effectClass=setting==='off'?'no-motion':setting==='low'?'low-motion':'';
+  const frameClass=galleryView?'reward-gallery-art reward-art-frame':'reward-complete-art reward-art-frame';
+  return `<div class="${frameClass} theme-${rewardThemes[index]} ${effectClass}">
+    <img src="${imagePath(index)}" alt="${pictureNames[index]}" width="1254" height="1254"${galleryView?' loading="lazy"':''} decoding="async">${rewardEffectMarkup(index)}
+  </div>`;
+}
 function puzzle(index,newest=false) {
   const picture=store.reward.pictures[index];
   const revealed=new Set(picture.order.slice(0,picture.unlocked));
   const last=picture.unlocked?picture.order[picture.unlocked-1]:-1;
   return `<div class="reward-puzzle" role="img" aria-label="ひみつの絵 ${index+1}、${picture.unlocked}マス開いたよ">
     ${Array.from({length:4},(_,idx)=>revealed.has(idx)
-      ? `<div class="reward-tile open ${newest&&idx===last?'just-opened':''}" style="--bx:${idx%2*100}%;--by:${Math.floor(idx/2)*100}%;background-image:url('${imagePath(index,true)}')"></div>`
+      ? `<div class="reward-tile open ${newest&&idx===last&&store.settings.effects!=='off'?'just-opened':''}" style="--bx:${idx%2*100}%;--by:${Math.floor(idx/2)*100}%;background-image:url('${imagePath(index)}')"></div>`
       : `<div class="reward-tile locked"><span aria-hidden="true">${['✿','★','♥','✦'][idx]}</span></div>`).join('')}
   </div>`;
 }
 function rewardPanel(index,newest=false) {
   const p=store.reward.pictures[index];
   return `<section class="panel reward-section"><h2>${p.unlocked===4?pictureNames[index]:`秘密の絵 ${index+1}`}</h2>
-    ${p.unlocked===4?`<p class="muted">絵が完成したよ！ 動く絵を楽しもう！</p>
-    <div class="reward-complete-art ${store.settings.effects==='off'?'no-motion':store.settings.effects==='low'?'low-motion':''}"><img src="${imagePath(index,store.settings.effects!=='normal')}" alt="${pictureNames[index]}" width="900" height="900"></div>`:
+    ${p.unlocked===4?`<p class="muted">絵が完成したよ！</p>
+    ${rewardArt(index)}`:
     `<p class="muted">満点を取るたびに、1マス開くよ。<ruby>何<rt>なん</rt></ruby>の絵かは、お楽しみ！</p>${puzzle(index,newest)}`}
     <p class="reward-progress">${p.unlocked===4?'完成！ おめでとう！':`${p.unlocked} / 4 マス　あと ${4-p.unlocked} 回で完成！`}</p>
   </section>`;
@@ -89,7 +110,7 @@ function gallery() {
   const r=store.reward;
   return `<section class="panel"><h2>秘密の絵 コレクション</h2><p class="muted">4つの絵があるよ。どんな絵かは、完成するまで秘密！</p>
   <div class="gallery-grid">${r.pictures.map((p,i)=>`<div class="gallery-card ${p.unlocked===4?'complete':''}">
-    ${p.unlocked===4?`<img src="${imagePath(i,store.settings.effects!=='normal')}" alt="${pictureNames[i]}" width="900" height="900"><strong>${pictureNames[i]}</strong>`:
+    ${p.unlocked===4?`${rewardArt(i,true)}<strong>${pictureNames[i]}</strong>`:
     `<div class="gallery-secret" aria-hidden="true">🎁</div><strong>秘密の絵 ${i+1}</strong>`}
     <small>${p.unlocked===4?'完成！':p.unlocked?`${p.unlocked} / 4 マス`:currentRewardIndex(r)===i?'これから開くよ！':'まだ秘密'}</small>
   </div>`).join('')}</div></section>`;
