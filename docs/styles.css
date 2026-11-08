@@ -52,3 +52,25 @@ summary{cursor:pointer;font-weight:800;font-size:19px;padding:2px 0 12px}
 @media(min-width:700px){.shell.narrow{max-width:680px}.numberpad{max-width:510px;margin:auto;gap:12px}.numkey{min-height:68px}.quiz-card{padding:25px 34px}.answer-box{max-width:510px;margin:0 auto 16px}.quiz-card>.btn.wide{max-width:510px;margin:17px auto 0}}
 @media(max-width:450px){.animal-scene{height:170px}.feedback{padding:14px}.reward-alert{font-size:16px}}
 @media(prefers-reduced-motion:reduce){.confetti{display:none}.animal-scene *,.reward-tile.just-opened{animation:none!important}}
+
+/* v1.3: secret four-picture collection and ruby typography */
+ruby{ruby-position:over;line-height:1.65;white-space:nowrap}
+rt{font-size:.48em;font-weight:600;line-height:1.05;color:var(--muted)}
+button rt{color:inherit}
+.gallery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:15px}
+.gallery-card{background:linear-gradient(135deg,#e6f3ff,#fff0f5);border-radius:20px;padding:14px;display:flex;align-items:center;flex-direction:column;gap:8px;min-width:0;border:2px solid #e3dfed}
+.gallery-card.complete{background:#fff7ed;border-color:#eddcb6}
+.gallery-card img,.gallery-secret{width:min(100%,220px);aspect-ratio:1;object-fit:cover;border-radius:12px}
+.gallery-secret{display:grid;place-items:center;font-size:clamp(32px,6vw,70px);background:linear-gradient(145deg,#d7eaff,#f9dce9)}
+.gallery-card strong{font-size:clamp(13px,1.9vw,18px);text-align:center}
+.gallery-card small{font-size:13px;color:#637b72;font-weight:700}
+.reward-complete-art{max-width:440px;margin:16px auto;border:7px solid #f9e8bd;border-radius:25px;box-shadow:0 10px 22px #b19b9052;overflow:hidden}
+.reward-complete-art img{display:block;width:100%;height:auto;aspect-ratio:1}
+.reward-complete-art.low-motion img{animation:gentle-art 5s ease-in-out infinite}
+.reward-complete-art.no-motion img{animation:none}
+@keyframes gentle-art{0%,100%{transform:scale(1)}50%{transform:scale(1.012)}}
+.result-training{background:linear-gradient(145deg,#eff0ff,#ffeadf)}
+.full-collection-banner{background:linear-gradient(115deg,#edf7ff,#fff2ba,#f8e7ff);border:3px solid #e9cc71}
+.full-collection-banner h2{color:#83639c;font-size:32px}
+@media(min-width:760px){.gallery-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){.reward-complete-art img{animation:none!important}}

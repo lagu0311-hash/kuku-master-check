@@ -1,18 +1,19 @@
-import { BANK, newStore, validateStore, buildQuestions, masteryOf, masteryCounts, stageStats, median, csvOf, localDate, scoreBand, awardPerfect, REVEAL_ORDER } from './core.js';
+import { BANK, newStore, validateStore, buildQuestions, masteryOf, masteryCounts, stageStats, median, csvOf, localDate, scoreBand, awardPerfect, REWARD_PICTURES, currentRewardIndex, totalRewardTiles } from './core.js';
 import { animalSvg } from './animals.js';
 
-const STORAGE_KEY = 'kuku-master-check:v2';
+const STORAGE_KEY = 'kuku-master-check:v3';
+const V2_STORAGE_KEY = 'kuku-master-check:v2';
 const LEGACY_STORAGE_KEY = 'kuku-master-check:v1';
 const $app = document.querySelector('#app');
-const names = { stage:'だんごと',mixed:'まぜこぜ',full:'ぜんぶ',weak:'にがてこくふく',practice:'れんしゅう',challenge:'ちからだめし' };
-const masteryNames = { unseen:'まだ',practice:'れんしゅう中',learning:'おぼえてきた',mastered:'ばっちり！' };
-const state = { page:'home', mode:'practice', kind:'stage', stage:2, count:10, answer:'', paused:false, feedback:null, lastSessionId:null, selectedCell:null, notice:'',variant:null,rewardJustUnlocked:false,previousVariant:{},awardAnimation:false };
+const names = { stage:'段ごと',mixed:'まぜこぜ',full:'全部',weak:'苦手克服',practice:'練習',challenge:'力試し' };
+const masteryNames = { unseen:'まだ',practice:'練習中',learning:'おぼえてきた',mastered:'ばっちり！' };
+const state = { page:'home', mode:'practice', kind:'stage', stage:2, count:10, answer:'', paused:false, feedback:null, lastSessionId:null, selectedCell:null, notice:'',variant:null,lastAward:null,previousVariant:{},awardAnimation:false };
 let store = newStore();
 let clockSince = null;
 let busy = false;
 
 try {
-  const saved=localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
+  const saved=localStorage.getItem(STORAGE_KEY) ?? localStorage.getItem(V2_STORAGE_KEY) ?? localStorage.getItem(LEGACY_STORAGE_KEY);
   if (saved) {
     store=validateStore(JSON.parse(saved));
     if (!localStorage.getItem(STORAGE_KEY)) localStorage.setItem(STORAGE_KEY,JSON.stringify(store));
@@ -42,7 +43,7 @@ const variantSets = {
   good:[['cat','jump'],['cat','star'],['cat','clap'],['cat','spin']],
   cheer:[['cat','coach'],['rabbit','coach'],['dog','weights'],['squirrel','coach']]
 };
-const positiveMessages=['やったね！','すごい！','そのちょうし！','ばっちり！','よくできたね！','せいかい！'];
+const positiveMessages=['やったね！','すごい！','そのちょうし！','ばっちり！','よくできたね！','正解！'];
 const encouragingMessages=['だいじょうぶ、つぎいこう！','れんしゅうで つよくなる！','がんばっていて えらい！','つぎも チャレンジ！','いっしょに おぼえよう！','その いっぽが すてき！'];
 function pickVariant(set) {
   const arr=variantSets[set];let n=Math.floor(Math.random()*arr.length);
@@ -65,30 +66,79 @@ function animalScene(variant, kind='success') {
   return `<div class="animal-scene ${kind} ${store.settings.effects==='off'?'still':store.settings.effects==='low'?'gentle':''}">
     <span class="scene-spark left" aria-hidden="true">✦</span>${animalSvg(variant.type,variant.pose)}<span class="scene-spark right" aria-hidden="true">✧</span></div>`;
 }
-function puzzle(unlocked=store.reward.unlocked, newest=false) {
-  const unlockedIndices=new Set(REVEAL_ORDER.slice(0,unlocked));
-  const last=unlocked?REVEAL_ORDER[unlocked-1]:-1;
-  return `<div class="reward-puzzle" role="img" aria-label="ごほうびのえ、${unlocked}マス開いたよ">
-    ${Array.from({length:9},(_,idx)=>unlockedIndices.has(idx)
-      ? `<div class="reward-tile open ${newest&&idx===last?'just-opened':''}" style="--bx:${idx%3*50}%;--by:${Math.floor(idx/3)*50}%"></div>`
+const pictureNames=['花畑の猫ちゃん','星空の猫ちゃん','ピクニック動物たち','青い風船の猫ちゃん'];
+function imagePath(index, still=false){const filename=REWARD_PICTURES[index].image;return `./assets/${still?filename.replace('.svg','-still.svg'):filename}`;}
+function puzzle(index,newest=false) {
+  const picture=store.reward.pictures[index];
+  const revealed=new Set(picture.order.slice(0,picture.unlocked));
+  const last=picture.unlocked?picture.order[picture.unlocked-1]:-1;
+  return `<div class="reward-puzzle" role="img" aria-label="ひみつの絵 ${index+1}、${picture.unlocked}マス開いたよ">
+    ${Array.from({length:9},(_,idx)=>revealed.has(idx)
+      ? `<div class="reward-tile open ${newest&&idx===last?'just-opened':''}" style="--bx:${idx%3*50}%;--by:${Math.floor(idx/3)*50}%;background-image:url('${imagePath(index,true)}')"></div>`
       : `<div class="reward-tile locked"><span aria-hidden="true">${['✿','★','♥','✦','🐾','✦','♥','★','✿'][idx]}</span></div>`).join('')}
   </div>`;
 }
-function rewardPanel(celebrating=false) {
-  const u=store.reward.unlocked;
-  return `<section class="panel reward-section"><h2>ひみつの ごほうびのえ</h2>
-    <p class="muted">ちからだめしで まんてんを とると、えが 1マスずつ ひらくよ！</p>
-    ${puzzle(u,celebrating)}
-    <p class="reward-progress">${u===9?'かんせい！ ぜんぶ ひらいたよ！':`${u} / 9 マス　あと ${9-u} かいで かんせい！`}</p>
-    ${u===9?'<p class="small centered">おめでとう！ いつでも かんせいした えを みられるよ。</p>':''}
+function rewardPanel(index,newest=false) {
+  const p=store.reward.pictures[index];
+  return `<section class="panel reward-section"><h2>${p.unlocked===9?pictureNames[index]:`ひみつの絵 ${index+1}`}</h2>
+    ${p.unlocked===9?`<p class="muted">絵が完成したよ！ 動く絵を楽しもう！</p>
+    <div class="reward-complete-art ${store.settings.effects==='off'?'no-motion':store.settings.effects==='low'?'low-motion':''}"><img src="${imagePath(index,store.settings.effects!=='normal')}" alt="${pictureNames[index]}" width="900" height="900"></div>`:
+    `<p class="muted">満点を取るたびに、1マス開くよ。何の絵かは、お楽しみ！</p>${puzzle(index,newest)}`}
+    <p class="reward-progress">${p.unlocked===9?'完成！ おめでとう！':`${p.unlocked} / 9 マス　あと ${9-p.unlocked} 回で完成！`}</p>
   </section>`;
 }
+function gallery() {
+  const r=store.reward;
+  return `<section class="panel"><h2>ひみつの絵 コレクション</h2><p class="muted">4つの絵があるよ。どんな絵かは、完成するまでひみつ！</p>
+  <div class="gallery-grid">${r.pictures.map((p,i)=>`<div class="gallery-card ${p.unlocked===9?'complete':''}">
+    ${p.unlocked===9?`<img src="${imagePath(i,store.settings.effects!=='normal')}" alt="${pictureNames[i]}" width="900" height="900"><strong>${pictureNames[i]}</strong>`:
+    `<div class="gallery-secret" aria-hidden="true">🎁</div><strong>ひみつの絵 ${i+1}</strong>`}
+    <small>${p.unlocked===9?'完成！':p.unlocked?`${p.unlocked} / 9 マス`:currentRewardIndex(r)===i?'これから開くよ！':'まだひみつ'}</small>
+  </div>`).join('')}</div></section>`;
+}
+function rubyText(root) {
+  if (state.page==='parent') return;
+  // The DOM is created solely from trusted UI strings and validated numeric records.
+  const readings=new Map(Object.entries({
+    '九九':'くく','正解':'せいかい','不正解':'ふせいかい','満点':'まんてん','問題':'もんだい',
+    '練習':'練習','挑戦':'ちょうせん','力試し':'力試し','結果':'けっか','全部':'全部',
+    '記録':'きろく','完成':'かんせい','ご褒美':'ごほうび','花畑':'はなばたけ','星空':'ほしぞら',
+    '猫':'ねこ','犬':'いぬ','動物':'どうぶつ','風船':'ふうせん','秘密':'ひみつ',
+    '今日':'きょう','時間':'じかん','答え':'こたえ','開く':'ひらく','開いた':'ひらいた',
+    '自分':'じぶん','回':'かい','絵':'え','枚':'まい','段':'だん','次':'つぎ',
+    '星':'ほし','間':'あいだ','休憩':'きゅうけい','再開':'さいかい','応援':'おうえん'
+  }));
+  const keys=[...readings.keys()].sort((a,b)=>b.length-a.length);
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode()) {
+    const node=walker.currentNode;
+    if(!node.nodeValue || !keys.some(k=>node.nodeValue.includes(k)))continue;
+    if(node.parentElement?.closest('ruby,rt,script,style,option'))continue;
+    nodes.push(node);
+  }
+  for(const node of nodes) {
+    const text=node.nodeValue,fragment=document.createDocumentFragment();let idx=0;
+    while(idx<text.length) {
+      let best=null,where=text.length;
+      for(const word of keys) {const at=text.indexOf(word,idx);if(at>=0&&at<where){best=word;where=at;}}
+      if(!best){fragment.append(document.createTextNode(text.slice(idx)));break;}
+      if(where>idx)fragment.append(document.createTextNode(text.slice(idx,where)));
+      const ruby=document.createElement('ruby');ruby.append(document.createTextNode(best));
+      const rt=document.createElement('rt');rt.textContent=readings.get(best);ruby.append(rt);fragment.append(ruby);
+      idx=where+best.length;
+    }
+    node.replaceWith(fragment);
+  }
+}
+
 function shell(body, narrow=false) {
   $app.innerHTML = `<div class="shell ${narrow ? 'narrow' : ''}">
     <header class="masthead"><span class="brand-mark" aria-hidden="true">★</span><span class="brand">九九マスターチェック</span></header>
     ${state.notice ? `<div class="notice" role="alert">${state.notice}</div>` : ''}
     ${body}<footer>がんばった分だけ、できることがふえていくよ。<span class="footnote"> 記録はこの端末に保存されます。</span></footer>
   </div>`;
+  rubyText($app);
 }
 const btn = (action, text, cls='', extra='') => `<button class="btn ${cls}" data-action="${action}" ${extra}>${text}</button>`;
 const secondary = (action,text)=>btn(action,text,'secondary');
@@ -100,8 +150,8 @@ function renderHome() {
   <div class="hero"><div class="hero-cat">${animalSvg('cat','star')}</div><div><b>${progress.mastered} / 81 もん</b><small>「ばっちり！」になった もんだい</small></div></div>
   ${resumed}
   <div class="home-grid">
-    <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>れんしゅう</strong><small>こたえを たしかめながら</small></button>
-    <button class="home-card lavender" data-action="setup-challenge"><span class="home-icon">🏅</span><strong>ちからだめし</strong><small>どのくらい おぼえたかな？</small></button>
+    <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>練習</strong><small>こたえを たしかめながら</small></button>
+    <button class="home-card lavender" data-action="setup-challenge"><span class="home-icon">🏅</span><strong>力試し</strong><small>どのくらい おぼえたかな？</small></button>
     <button class="home-card peach" data-action="child"><span class="home-icon">⭐</span><strong>わたしのきろく</strong><small>がんばった きろくをみる</small></button>
     <button class="home-card gray" data-action="parent"><span class="home-icon">📊</span><strong>おうちのひと</strong><small>くわしい きろくと せってい</small></button>
   </div>`,false);
@@ -110,7 +160,7 @@ function renderSetup() {
   shell(`${header(state.mode === 'practice' ? 'れんしゅうを えらぼう' : 'ちからだめしを えらぼう',
     state.mode === 'practice' ? 'こたえを たしかめながら すすめるよ。' : 'さいごまで がんばってから、こたえあわせ！')}
     <div class="panel"><h2>どのテストにする？</h2><div class="choice-grid">
-      ${[['stage','だんごと','9もん'],['mixed','まぜこぜ','10・20もん'],['full','ぜんぶ','81もん'],['weak','にがてこくふく','10・20もん']]
+      ${[['stage','段ごと','9もん'],['mixed','まぜこぜ','10・20もん'],['full','全部','81もん'],['weak','苦手克服','10・20もん']]
        .map(([kind,label,sub])=>`<button class="choice ${state.kind===kind?'picked':''}" data-action="choose-kind" data-kind="${kind}" aria-pressed="${state.kind===kind}"><strong>${label}</strong><small>${sub}</small></button>`).join('')}
     </div>
     ${state.kind === 'stage'?`<label class="control-label" for="stage">なんのだん？</label><select id="stage" data-setting="stage">${Array.from({length:9},(_,i)=>`<option value="${i+1}" ${state.stage===i+1?'selected':''}>${i+1} のだん</option>`).join('')}</select>`:''}
@@ -130,7 +180,7 @@ function renderQuiz() {
     shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>こたえあわせ</span></div>
       <div class="panel centered feedback ${f.correct?'is-correct':'is-incorrect'}">
       ${f.correct?confetti('small'):''}${animalScene(v,f.correct?'success':'encourage')}
-      <h1>${f.correct?v.message:'まちがえても だいじょうぶ！'}</h1>
+      <h1>${f.correct?v.message:'まちがえても 大丈夫！'}</h1>
       <p class="equation">${f.a} × ${f.b} = ${f.a*f.b}</p>
       ${!f.correct?`<p>${v.message}　こたえは <strong>${f.a*f.b}</strong> だよ。</p>`:'<p>せいかい！　すてきだね！</p>'}
       ${btn('next',atEnd?'けっかを みる ▶':'つぎのもんだい ▶','primary wide big')}</div>`,true);
@@ -149,7 +199,7 @@ function renderQuiz() {
   shell(`<div class="quiz-top">${secondary('home','← ホーム')}<span>${names[active.mode]} ・ ${idx+1} / ${total} もん</span>${secondary('pause','やすむ')}</div>
     <div class="progress"><div class="progress-fill" style="width:${percent}%"></div></div>
     <section class="quiz-card" aria-label="もんだい"><div class="question-label">だい ${idx+1} もん</div><h1 class="equation">${q.a} × ${q.b} = <span class="question-mark">？</span></h1>
-    <div class="answer-box" aria-live="polite" aria-label="にゅうりょくしたこたえ">${state.answer || '<span class="placeholder">こたえをいれてね</span>'}</div>
+    <div class="answer-box" aria-live="polite" aria-label="入力した答え">${state.answer || '<span class="placeholder">こたえをいれてね</span>'}</div>
     <div class="numberpad">${['1','2','3','4','5','6','7','8','9','けす','0','⌫'].map(v=>`<button class="numkey ${v==='けす'||v==='⌫'?'utility':''}" data-action="digit" data-value="${v}" aria-label="${v==='⌫'?'ひとつけす':v}">${v}</button>`).join('')}</div>
     ${btn('answer','こたえる！','primary wide big',state.answer?'':'disabled')}
     <p class="muted small center">じかんせいげんは ないよ。ゆっくり かんがえてね。</p></section>`,true);
@@ -164,7 +214,8 @@ function renderResult() {
     perfect:{title:'パーフェクト！',subtitle:'ぜんぶ せいかい！ すごい！',type:'good',confetti:'grand'},
     great:{title:'すごい！',subtitle:'とっても がんばったね！',type:'good',confetti:'small'},
     good:{title:'がんばったね！',subtitle:'つぎも チャレンジしよう！',type:'good'},
-    keepgoing:{title:'ひとつずつ つよくなる！',subtitle:'れんしゅうすると もっと できるよ！',type:'cheer'},
+    keepgoing:{title:'ひとつずつ 強くなる！',subtitle:'練習すると もっと できるよ！',type:'cheer'},
+    training:{title:'少しずつ 覚えていこう！',subtitle:'筋トレどうぶつと いっしょに 練習だ！',type:'cheer'},
     courage:{title:'チャレンジ できたね！',subtitle:'いっしょに すこしずつ おぼえよう！',type:'cheer'}
   };
   const b=bands[band];
@@ -173,26 +224,31 @@ function renderResult() {
   shell(`${header('よく がんばったね！','さいごまで やりとげたね！')}
     <div class="panel centered result result-${band}">
       ${b.confetti?confetti(b.confetti):''}
-      ${animalScene(variant,band==='keepgoing'||band==='courage'?'encourage':'success')}
+      ${animalScene(variant,['keepgoing','training','courage'].includes(band)?'encourage':'success')}
       <h2>${session.mode==='challenge'?b.title:'れんしゅう おつかれさま！'}</h2>
       <div class="score">${session.correct} <span>/ ${session.total} もん</span></div>
       <p>${session.mode==='challenge'?b.subtitle:'きょうも たくさん がんばったね！'}</p>
       <p class="muted small">${names[session.mode]} ・ ${names[session.kind]}</p>
-      ${celebration?`<div class="reward-alert">${state.rewardJustUnlocked?'ごほうびのえが 1マス ひらいたよ！': 'ごほうびのえは もう かんせいしているよ！'}</div>`:''}
+      ${celebration?`<div class="reward-alert">${state.lastAward?state.lastAward.collectionComplete?'4枚の絵が全部完成！ コンプリート！':state.lastAward.pictureComplete?'ひみつの絵が 完成したよ！':'ご褒美の絵が 1マス 開いたよ！':'4枚の絵は もう全部完成しているよ！'}</div>`:''}
     </div>
-    ${celebration?rewardPanel(state.rewardJustUnlocked):''}
+    ${celebration&&state.lastAward?rewardPanel(state.lastAward.pictureIndex,true):''}${celebration&&state.lastAward?.collectionComplete?'<div class="panel centered full-collection-banner"><h2>コンプリート！</h2><p>4枚の絵が 全部完成したよ！</p></div>':''}
     ${session.mode === 'challenge' ? `<details class="panel"><summary>こたえあわせ（${session.total} もん）</summary>
       <div class="answer-list">${records.map(r=>`<div class="answer-item ${r.correct?'ok':'no'}"><span>${r.a} × ${r.b} = ${r.a*r.b}</span><span>${r.correct?'○':`×（${r.input}）`}</span></div>`).join('')}</div></details>` : ''}
     ${btn('setup-practice','また れんしゅうする','primary wide')}
-    ${secondary('reward','ごほうびのえを みる')}
+    ${secondary('reward','ご褒美の絵を 見る')}
     ${secondary('home','ホームへ')}`,true);
 }
 function renderReward() {
-  shell(`${header('ひみつの ごほうびのえ','まんてんで 1マスずつ あくよ！')}
-  ${store.reward.unlocked===9?'<div class="panel centered"><h2>かんせい おめでとう！</h2><p>みんなで なかよく ピクニック！</p></div>':''}
-  ${rewardPanel(false)}
-  ${secondary('home','← ホームへ')}`,true);
+  const idx=currentRewardIndex(store.reward);
+  const count=totalRewardTiles(store.reward);
+  shell(`${header('ひみつの ご褒美の絵','満点を取ると、絵が1マスずつ開くよ！')}
+  <div class="panel centered"><h2>${count===36?'コンプリート！ 4枚全部完成！':`${count} / 36 マス 開いたよ！`}</h2>
+  <p class="muted">何の絵かは、完成してからのお楽しみ！</p></div>
+  ${idx>=0?rewardPanel(idx):'<div class="panel centered full-collection-banner"><h2>大成功！</h2><p>4枚全部集めたね！</p></div>'}
+  ${gallery()}
+  ${secondary('home','← ホームへ')}`,false);
 }
+
 function renderChild() {
   const counts = masteryCounts(store.records);
   const recent = store.sessions.slice(-5).reverse();
@@ -201,7 +257,7 @@ function renderChild() {
     <p>おぼえてきた もんだい：${counts.learning} もん</p><p class="muted small">これからも じぶんのペースでね。</p></div>
     <div class="panel"><h2>さいきんの チャレンジ</h2>
     ${recent.length?recent.map(s=>`<div class="history-item"><span>${new Date(s.completedAt).toLocaleDateString('ja-JP')}　${names[s.kind]}</span><b>${s.correct} / ${s.total}</b></div>`).join(''):'<p class="muted">まだ きろくがないよ。ためしてみよう！</p>'}</div>
-    ${secondary('reward','ひみつの ごほうびのえ')}
+    ${secondary('reward','ひみつの ご褒美の絵')}
     ${secondary('home','← ホームへ')}`,true);
 }
 function renderParent() {
@@ -230,7 +286,7 @@ function renderParent() {
     <div class="panel"><h2>段別の状況</h2><table><thead><tr><th>段</th><th>出題済み</th><th>直近正解</th><th>ばっちり</th></tr></thead><tbody>
       ${stats.map(s=>`<tr><th>${s.stage}の段</th><td>${s.tested}/9</td><td>${s.latestCorrect}/9</td><td>${s.mastered}/9</td></tr>`).join('')}
     </tbody></table><p class="muted small">この集計は「ちからだめし」の回答のみを対象にします。未出題は正解数に含めません。</p></div>
-    <div class="panel"><h2>履歴とデータ管理</h2><p class="muted small">保存先はこのブラウザです。iPhone、iPad、PCの間で自動同期はされません。</p>
+    <div class="panel"><h2>履歴とデータ管理</h2><p class="muted small">保存先はこのブラウザです。主にAndroidタブレットのChromeで使います。端末間で自動同期はされません。</p>
       <label class="control-label" for="effects">アニメーションの おおきさ</label>
       <select id="effects" data-setting="effects"><option value="normal" ${store.settings.effects==='normal'?'selected':''}>ふつう（おすすめ）</option><option value="low" ${store.settings.effects==='low'?'selected':''}>ひかえめ</option><option value="off" ${store.settings.effects==='off'?'selected':''}>オフ</option></select>
       <p class="muted small">紙吹雪やどうぶつの動きを調整できます。画像や正誤表示は残ります。</p>
@@ -259,7 +315,7 @@ function startTest() {
   if (store.active && !confirm('とちゅうのテストをやめて、新しいテストをはじめますか？\n（すでに答えた問題の記録は残ります）')) return;
   const questions=buildQuestions({kind:state.kind,stage:state.stage,count:state.count,records:store.records});
   store.active = { id: crypto.randomUUID(),mode:state.mode,kind:state.kind,questions,index:0,elapsedMs:0 };
-  state.answer='';state.paused=false;state.feedback=null;state.variant=null;state.rewardJustUnlocked=false;clockSince=null;state.page='quiz';save();render();
+  state.answer='';state.paused=false;state.feedback=null;state.variant=null;state.lastAward=null;clockSince=null;state.page='quiz';save();render();
 }
 function answer() {
   if (!store.active || state.paused || state.feedback || busy || !/^\d{1,3}$/.test(state.answer)) return;
@@ -276,13 +332,13 @@ function answer() {
         correct:records.filter(x=>x.correct).length,completedAt:new Date().toISOString()});
       state.lastSessionId=a.id;
       const session=store.sessions.at(-1);
-      state.rewardJustUnlocked=awardPerfect(store,session);
+      state.lastAward=awardPerfect(store,session);
       store.active=null;state.paused=false;
       if(a.mode==='practice'){
         state.feedback=r;state.variant=pickVariant(r.correct?'correct':'wrong');state.page='quiz';
       } else {
         state.page='result';state.feedback=null;
-        state.variant=pickVariant(scoreBand(session.correct,session.total)==='keepgoing'||scoreBand(session.correct,session.total)==='courage'?'cheer':'good');
+        state.variant=pickVariant(['keepgoing','training','courage'].includes(scoreBand(session.correct,session.total))?'cheer':'good');
       }
     } else if (a.mode==='practice') {
       state.feedback=r;state.variant=pickVariant(r.correct?'correct':'wrong');
@@ -328,7 +384,7 @@ function onClick(ev) {
     case 'import':document.querySelector('#import-input')?.click();break;
     case 'erase':
       if(confirm('この端末の九九の記録を全部消します。よろしいですか？')) {
-        try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(LEGACY_STORAGE_KEY);}catch{};
+        try{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(V2_STORAGE_KEY);localStorage.removeItem(LEGACY_STORAGE_KEY);}catch{};
         store=newStore();storageBlocked=false;state.notice='記録を削除しました。';navigate('parent');
       } break;
   }

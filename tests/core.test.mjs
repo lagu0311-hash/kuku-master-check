@@ -53,43 +53,66 @@ test('calendar date uses local day',()=>{
  assert.equal(localDate(new Date(2026,10,8,12)), '2026-11-08');
 });
 
-import { scoreBand, awardPerfect, REVEAL_ORDER } from '../docs/core.js';
-test('score bands include 0, 40, 60, 80, and exact 100 percent',()=>{
-  for (const [score,expectBand] of [[0,'courage'],[3,'courage'],[4,'keepgoing'],[5,'keepgoing'],[6,'good'],[7,'good'],[8,'great'],[9,'great'],[10,'perfect']]) {
-    assert.equal(scoreBand(score,10),expectBand);
-  }
-  assert.equal(scoreBand(9,9),'perfect');
-  assert.equal(scoreBand(65,81),'great');
-  assert.throws(()=>scoreBand(11,10));
+import { scoreBand, awardPerfect, REWARD_PICTURES, totalRewardTiles, currentRewardIndex } from '../docs/core.js';
+test('six score bands: 100, 80-99, 60-79, 40-59, 20-39, 0-19',()=>{
+ const bands=[[0,'courage'],[1,'courage'],[2,'training'],[3,'training'],[4,'keepgoing'],[5,'keepgoing'],[6,'good'],[7,'good'],[8,'great'],[9,'great'],[10,'perfect']];
+ for(const [score,band] of bands)assert.equal(scoreBand(score,10),band);
+ assert.equal(scoreBand(9,9),'perfect');
+ assert.equal(scoreBand(65,81),'great');
+ assert.throws(()=>scoreBand(11,10));
 });
-test('nine reveal positions form a unique center-first 3×3 grid',()=>{
- assert.deepEqual(new Set(REVEAL_ORDER).size,9);
- assert.equal(REVEAL_ORDER[0],4);
- assert.deepEqual([...REVEAL_ORDER].sort(),[0,1,2,3,4,5,6,7,8]);
-});
-test('only full-score challenge unlocks; never duplicate and stop at nine',()=>{
+test('four rewards fixed in a secret order, tiles randomized per picture',()=>{
  const s=newStore();
- assert.equal(awardPerfect(s,{id:'practice',mode:'practice',correct:9,total:9}),false);
- assert.equal(awardPerfect(s,{id:'incorrect',mode:'challenge',correct:8,total:9}),false);
- for(let i=0;i<9;i++)assert.equal(awardPerfect(s,{id:`ok-${i}`,mode:'challenge',correct:9,total:9}),true);
- assert.equal(s.reward.unlocked,9);
- assert.equal(awardPerfect(s,{id:'ok-0',mode:'challenge',correct:9,total:9}),false);
- assert.equal(awardPerfect(s,{id:'tenth',mode:'challenge',correct:9,total:9}),false);
- assert.equal(s.reward.unlocked,9);
- assert.equal(s.reward.earnedSessionIds.length,10);
+ assert.deepEqual(s.reward.pictures.map(p=>p.id),REWARD_PICTURES.map(p=>p.id));
+ assert.equal(s.reward.pictures.length,4);
+ for(const p of s.reward.pictures)assert.deepEqual([...p.order].sort(),[0,1,2,3,4,5,6,7,8]);
+ assert.equal(currentRewardIndex(s.reward),0);
 });
-test('v1 backup migrates preserving history; v2 reward persists and validates',()=>{
- const old={schemaVersion:1,records:[record(7,8,56)],sessions:[],active:null};
- const migrated=validateStore(old);
- assert.equal(migrated.schemaVersion,2);
+test('perfect challenge in each kind unlocks one and exactly one tile',()=>{
+ const s=newStore();
+ assert.equal(awardPerfect(s,{id:'practice',mode:'practice',correct:9,total:9}),null);
+ assert.equal(awardPerfect(s,{id:'incorrect',mode:'challenge',correct:8,total:9}),null);
+ for(const [i,kind,total] of [[0,'stage',9],[1,'mixed',10],[2,'mixed',20],[3,'full',81],[4,'weak',10]]){
+  const won=awardPerfect(s,{id:`ok-${kind}-${i}`,mode:'challenge',correct:total,total});
+  assert.equal(won.pictureIndex,0);
+  assert.equal(won.unlocked,i+1);
+ }
+ assert.equal(totalRewardTiles(s.reward),5);
+ assert.equal(awardPerfect(s,{id:'ok-stage-0',mode:'challenge',correct:9,total:9}),null);
+ assert.equal(totalRewardTiles(s.reward),5);
+});
+test('36 full-score challenges complete four rewards and never double-count',()=>{
+ const s=newStore(()=>0.37),seen=[];
+ for(let i=0;i<36;i++){
+  const result=awardPerfect(s,{id:`reward-${i}`,mode:'challenge',correct:9,total:9});
+  assert.equal(result.pictureIndex,Math.floor(i/9));
+  seen.push(`${result.pictureIndex}:${result.tileIndex}`);
+  assert.equal(result.pictureComplete,i%9===8);
+  assert.equal(result.collectionComplete,i===35);
+ }
+ assert.equal(new Set(seen).size,36);
+ assert.equal(currentRewardIndex(s.reward),-1);
+ assert.equal(totalRewardTiles(s.reward),36);
+ assert.equal(awardPerfect(s,{id:'after',mode:'challenge',correct:81,total:81}),null);
+ assert.equal(s.reward.earnedSessionIds.length,37);
+ assert.equal(totalRewardTiles(s.reward),36);
+});
+test('migration of both v1 and v2 backups keeps records and previous reward tiles',()=>{
+ const v1={schemaVersion:1,records:[record(7,8,56)],sessions:[],active:null};
+ const migrated=validateStore(v1);
+ assert.equal(migrated.schemaVersion,3);
  assert.equal(migrated.records.length,1);
- assert.equal(migrated.reward.unlocked,0);
- assert.equal(migrated.settings.effects,'normal');
- const s=newStore();awardPerfect(s,{id:'one',mode:'challenge',correct:9,total:9});
- s.settings.effects='low';
- const restored=validateStore(s);
- assert.equal(restored.reward.unlocked,1);
- assert.equal(restored.settings.effects,'low');
- const invalid=structuredClone(s);invalid.reward.unlocked=9;
- assert.throws(()=>validateStore(invalid));
+ assert.equal(totalRewardTiles(migrated.reward),0);
+ const v2={...v1,schemaVersion:2,settings:{effects:'low'},reward:{pictureId:'storybook-picnic-1',unlocked:3,earnedSessionIds:['old-1','old-2','old-3']}};
+ const upgraded=validateStore(v2);
+ assert.equal(upgraded.schemaVersion,3);
+ assert.equal(upgraded.reward.pictures[0].unlocked,3);
+ assert.equal(upgraded.settings.effects,'low');
+ assert.equal(upgraded.reward.earnedSessionIds.length,3);
+ const again=validateStore(upgraded);
+ assert.equal(again.reward.pictures[0].unlocked,3);
+ const bad=structuredClone(again);bad.reward.pictures[0].order=[0,0,1,2,3,4,5,6,7];
+ assert.throws(()=>validateStore(bad));
+ const inconsistent=structuredClone(again);inconsistent.reward.pictures[1].unlocked=1;
+ assert.throws(()=>validateStore(inconsistent));
 });

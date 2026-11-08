@@ -56,4 +56,16 @@
 <ellipse cx="456" cy="739" rx="100" ry="41" fill="#fff9ee" stroke="#dec6ab" stroke-width="7"/>
 <circle cx="420" cy="731" r="22" fill="#f3bb72"/><circle cx="455" cy="742" r="20" fill="#e9a3b0"/><circle cx="485" cy="724" r="21" fill="#f6d48f"/><path d="M459 714q5 -20 17 -22" stroke="#79af91" stroke-width="5" fill="none"/>
 <g fill="#fff9d9" opacity=".8"><circle cx="97" cy="470" r="5"/><circle cx="318" cy="302" r="7"/><circle cx="618" cy="245" r="5"/><circle cx="769" cy="546" r="5"/></g>
-</svg>
+<style>
+  .kitty {transform-box:fill-box;transform-origin:50% 85%;animation:kitty-bob 3s ease-in-out infinite}
+  .float {transform-box:fill-box;transform-origin:center;animation:floaty 4s ease-in-out infinite}
+  .float2 {transform-box:fill-box;transform-origin:center;animation:floaty 5.3s ease-in-out -2s infinite}
+  .sway {transform-box:fill-box;transform-origin:bottom center;animation:sway 3s ease-in-out infinite alternate}
+  .twinkle {animation:twinkle 2.5s ease-in-out infinite alternate}
+  .twinkle2 {animation:twinkle 3.5s ease-in-out -1.2s infinite alternate}
+  @keyframes kitty-bob {0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-15px) rotate(-2deg)}}
+  @keyframes floaty {0%,100%{transform:translateY(0)}50%{transform:translateY(-21px)}}
+  @keyframes sway {0%{transform:rotate(-5deg)}100%{transform:rotate(6deg)}}
+  @keyframes twinkle {0%{opacity:.4;transform:scale(.85)}100%{opacity:1;transform:scale(1.14)}}
+  @media (prefers-reduced-motion:reduce) {* {animation:none!important}}
+</style><g class="twinkle"><path d="M120 365l11 18 21 5-21 5-11 19-10-19-20-5 20-5z" fill="#fff7c9"/></g><g class="twinkle2"><path d="M665 155l10 16 17 4-17 4-10 17-10-17-17-4 17-4z" fill="#ffe6b7"/></g><!-- class="picnic-star" --></svg>
