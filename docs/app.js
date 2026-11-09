@@ -199,8 +199,13 @@ function renderHome() {
   const progress = masteryCounts(store.records);
   const resumed = store.active ? `<div class="resume-panel"><div><b>続きのテストがあるよ</b><p>${names[store.active.kind]} ・ ${store.active.index + 1} / ${store.active.questions.length} 問</p></div>${btn('resume-active','続きから ▶','primary')}</div>` : '';
   shell(`${header('今日も九九にチャレンジ！','自分のペースで、一歩ずつ。')}
-  <div class="hero"><div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 問</b><small>「ばっちり！」になった問題</small></div></div>
-  <p class="muted small">「力試し」で、違う日に2回正解！ 一番新しい答えも正解なら「ばっちり！」になるよ！</p>
+  <div class="hero" style="flex-direction:column;align-items:stretch;gap:12px">
+    <div style="display:flex;align-items:center;gap:18px">
+      <div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 問</b><small>「ばっちり！」になった問題</small></div>
+    </div>
+    <div style="border-top:1px solid #c6dccf"></div>
+    <p class="muted small" style="margin:0">「力試し」で、違う日に2回正解！ 一番新しい答えも正解なら「ばっちり！」になるよ！</p>
+  </div>
   ${resumed}
   <div class="home-grid">
     <button class="home-card mint" data-action="setup-practice"><span class="home-icon">✏️</span><strong>練習</strong><small>答えを確かめながら</small></button>
