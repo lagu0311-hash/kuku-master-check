@@ -204,7 +204,7 @@ function renderHome() {
       <div class="hero-cat">${animalSvg('cat','home')}</div><div><b>${progress.mastered} / 81 問</b><small>「ばっちり！」になった問題</small></div>
     </div>
     <div style="border-top:1px solid #c6dccf"></div>
-    <p class="muted small" style="margin:0">「力試し」で、違う日に2回正解！ 一番新しい答えも正解なら「ばっちり！」になるよ！</p>
+    <p class="muted small" style="margin:0">「<ruby>力試し<rt>ちからだめし</rt></ruby>」で、<ruby>違う<rt>ちがう</rt></ruby><ruby>日<rt>ひ</rt></ruby>に2<ruby>回<rt>かい</rt></ruby><ruby>正解<rt>せいかい</rt></ruby>！ <ruby>一番<rt>いちばん</rt></ruby><ruby>新しい<rt>あたらしい</rt></ruby><ruby>答え<rt>こたえ</rt></ruby>も<ruby>正解<rt>せいかい</rt></ruby>なら「ばっちり！」になるよ！</p>
   </div>
   ${resumed}
   <div class="home-grid">
